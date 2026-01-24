@@ -3,14 +3,14 @@ import sys
 import warnings
 import logging
 
-# --- SILENCER BLOCK (Muss ganz oben stehen) ---
-# 1. Python Warnungen unterdrücken
+# --- SILENCER BLOCK ---
+# 1. Suppress Python Warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", message=".*flash-attn.*")
 warnings.filterwarnings("ignore", message=".*SoX.*")
 
-# 2. Logger stummschalten (nur echte Fehler anzeigen)
+# 2. Mute Loggers (show errors only)
 logging.getLogger("torchaudio").setLevel(logging.ERROR)
 logging.getLogger("qwen_tts").setLevel(logging.ERROR)
 logging.getLogger("httpx").setLevel(logging.ERROR)
@@ -218,7 +218,8 @@ with gr.Blocks(title="Qwen3 Voice Factory") as demo:
     with gr.Row(elem_classes="header-row"):
         with gr.Column(scale=1):
             gr.Markdown("# 🏭 Qwen3 Voice Factory")
-            gr.Markdown("RTX 5090 Powered | 3 Engines | Portable")
+            # --- CHANGED: More professional subtitle ---
+            gr.Markdown("RTX 50 Series Powered | 3 Engines | Portable")
         
         with gr.Column(scale=1):
             stats_display = gr.HTML(value=get_system_stats())
@@ -309,5 +310,4 @@ with gr.Blocks(title="Qwen3 Voice Factory") as demo:
             t3_btn.click(run_designer, [t3_text, t3_desc, t3_instr], [t3_out, t3_stat])
 
 if __name__ == "__main__":
-    # CSS passed here
     demo.launch(inbrowser=True, css=custom_css)
