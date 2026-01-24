@@ -12,6 +12,8 @@ Specially optimized for **NVIDIA RTX 50 Series** (CUDA 12.8 / PyTorch Nightly), 
 - **🎬 Director Mode:** Choose presets (Ryan, Vivian) and provide direction instructions ("Angry", "Whispering").
 - **🧬 Voice Cloner:** Upload a short audio file (3-10s) and clone the voice (supports High-Quality ICL Mode).
 - **🎨 Voice Creator:** Create completely new voices from scratch using text descriptions (Voice Design).
+- **📊 Live Hardware Monitor:** Includes a real-time dashboard to watch your VRAM/RAM/CPU usage while generating.
+- **📂 Auto-Save:** Automatically creates an `outputs_audio` folder and saves every generation with a timestamp.
 - **Portable:** Does not modify your Windows system. Everything stays contained in one folder.
 
 ## Installation
@@ -47,4 +49,5 @@ This project is a GUI wrapper built to make the amazing work of the **Qwen Team*
 
 This is a free open-source project. I don't ask for donations.
 However, if you want to say "Thanks", check out my profile on **[Spotify](https://open.spotify.com/artist/7EdK2cuIo7xTAacutHs9gv?si=4AqQE6GcQpKJFeVk6gJ06g)**.
+
 A follow or a listen is the best way to support me! 🎧
