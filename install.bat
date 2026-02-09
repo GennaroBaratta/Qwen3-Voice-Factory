@@ -8,35 +8,32 @@ echo   (RTX 5090 / CUDA 12.8 Ready)
 echo ===================================================
 echo.
 
-:: 1. Check if Python exists
-if exist "python_env\python.exe" (
-    echo Python environment found. Skipping download.
-    goto :INSTALL_PACKAGES
+:: 1. Ensure uv is installed
+set "UV_EXE="
+where uv >nul 2>nul
+if errorlevel 1 (
+    echo [1/4] Installing uv (Python manager)
+    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 )
 
-:: 2. Download Python Portable (3.11.9)
-echo [1/4] Downloading Python 3.11 Portable...
-if not exist "python_env" mkdir "python_env"
-curl -L "https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip" -o "python_env\python.zip"
+for %%X in (uv.exe) do set "UV_EXE=%%~$PATH:X"
+if not defined UV_EXE (
+    for %%X in ("%USERPROFILE%\.local\bin\uv.exe" "%USERPROFILE%\.cargo\bin\uv.exe") do (
+        if exist "%%~fX" set "UV_EXE=%%~fX"
+    )
+)
 
-:: 3. Unzip
-echo [2/4] Extracting Python...
-tar -xf "python_env\python.zip" -C "python_env"
-del "python_env\python.zip"
+if not defined UV_EXE (
+    echo ERROR: uv not found. Please restart your terminal or install uv manually.
+    pause
+    exit /b 1
+)
 
-:: 4. Patch ._pth file (enable import site)
-echo [3/4] Configuring Python...
-(
-echo python311.zip
-echo .
-echo import site
-) > "python_env\python311._pth"
-
-:: 5. Install Pip
-echo [4/4] Installing Pip Package Manager...
-curl -L "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-.\python_env\python.exe get-pip.py --no-warn-script-location
-del "get-pip.py"
+:: 2. Create virtual environment if needed
+if not exist ".venv\Scripts\python.exe" (
+    echo [2/4] Creating virtual environment (Python 3.11)
+    "%UV_EXE%" venv .venv --python 3.11
+)
 
 :INSTALL_PACKAGES
 echo.
@@ -45,16 +42,12 @@ echo   Installing Libraries...
 echo ===================================================
 
 :: A. PyTorch Nightly (Must be first for RTX 5090)
-echo Installing PyTorch Nightly (Blackwell Support)...
-.\python_env\python.exe -m pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --no-warn-script-location
+echo [3/4] Installing PyTorch Nightly (Blackwell Support)...
+"%UV_EXE%" pip install --python .venv\Scripts\python.exe --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
-:: B. Other Requirements (Numpy comes from Torch, so we skip it here)
-echo Installing Qwen-TTS and Tools...
-.\python_env\python.exe -m pip install -r requirements.txt --no-warn-script-location
-
-:: C. Cleanup (Optimierung!)
-echo Cleaning up download cache...
-.\python_env\python.exe -m pip cache purge
+:: B. Project Dependencies
+echo [4/4] Installing project dependencies...
+"%UV_EXE%" sync --python .venv\Scripts\python.exe --no-dev
 
 echo.
 echo ===================================================

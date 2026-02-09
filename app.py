@@ -85,27 +85,27 @@ def load_specific_model(mode):
     model_id = MODELS_CONFIG[mode]
     print(f"⏳ Loading model for '{mode}': {model_id} ...")
     
-    try:
-        # Loading with bfloat16 and SDPA for RTX 50 series
-        model = Qwen3TTSModel.from_pretrained(
-            model_id,
-            device_map="cuda",
-            dtype=torch.bfloat16,
-            attn_implementation="sdpa"
-        )
-        print(f"✅ {mode.upper()} model loaded successfully (SDPA Mode)!")
-        loaded_models[mode] = model
-        return model
-    except Exception as e:
-        print(f"❌ Load Error for {mode}: {e}")
-        return None
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA is required but was not detected.")
+    # Loading with bfloat16 and SDPA for RTX 50 series
+    model = Qwen3TTSModel.from_pretrained(
+        model_id,
+        device_map="cuda",
+        dtype=torch.bfloat16,
+        attn_implementation="sdpa"
+    )
+    print(f"✅ {mode.upper()} model loaded successfully (SDPA Mode)!")
+    loaded_models[mode] = model
+    return model
 
 # --- ENGINE 1: DIRECTOR ---
 def run_director(text, speaker, instruction):
-    if not text or len(text.strip()) == 0: return None, "⚠️ Please enter text first!", None
+    if not text or len(text.strip()) == 0: return None, "⚠️ Please enter text first!"
     
-    model = load_specific_model("director")
-    if not model: return None, "Load Error", None
+    try:
+        model = load_specific_model("director")
+    except Exception as e:
+        return handle_error(e)
     
     print(f"🎬 Director: '{text}' | Speaker: {speaker}")
     try:
@@ -120,17 +120,19 @@ def run_director(text, speaker, instruction):
 
 # --- ENGINE 2: CLONER ---
 def run_cloner(text, ref_audio, ref_text):
-    if not ref_audio: return None, "⚠️ No Audio provided!", None
-    if not text or len(text.strip()) == 0: return None, "⚠️ Please enter text first!", None
+    if not ref_audio: return None, "⚠️ No Audio provided!"
+    if not text or len(text.strip()) == 0: return None, "⚠️ Please enter text first!"
     
-    model = load_specific_model("cloner")
-    if not model: return None, "Load Error", None
+    try:
+        model = load_specific_model("cloner")
+    except Exception as e:
+        return handle_error(e)
     
     # 1. Load Audio
     try:
         ref_wav, ref_sr = librosa.load(ref_audio, sr=16000, mono=True)
     except Exception as e:
-        return None, f"⚠️ Error loading audio file: {e}", None
+        return None, f"⚠️ Error loading audio file: {e}"
 
     # 2. CLONING PROCESS
     print(f"🧬 Cloning: '{text}'")
@@ -156,11 +158,13 @@ def run_cloner(text, ref_audio, ref_text):
 
 # --- ENGINE 3: CREATOR ---
 def run_designer(text, voice_description, instruction):
-    if not text or len(text.strip()) == 0: return None, "⚠️ Please enter text first!", None
-    if not voice_description or len(voice_description.strip()) == 0: return None, "⚠️ Please describe the voice first!", None
+    if not text or len(text.strip()) == 0: return None, "⚠️ Please enter text first!"
+    if not voice_description or len(voice_description.strip()) == 0: return None, "⚠️ Please describe the voice first!"
     
-    model = load_specific_model("designer")
-    if not model: return None, "Load Error", None
+    try:
+        model = load_specific_model("designer")
+    except Exception as e:
+        return handle_error(e)
     
     print(f"🎨 Design: '{text}'")
     try:
@@ -184,7 +188,10 @@ def save_audio(wavs, sr, prefix):
     filename = f"{prefix}_{timestamp}.wav"
     path = os.path.abspath(os.path.join(OUTPUT_DIR, filename))
     
-    if isinstance(wavs, list): data = wavs[0]
+    if isinstance(wavs, list):
+        if len(wavs) == 0:
+            raise ValueError("Model returned empty audio list.")
+        data = wavs[0]
     else: data = wavs
     
     sf.write(path, data, sr)

@@ -20,8 +20,10 @@ Specially optimized for **NVIDIA RTX 50 Series** (CUDA 12.8 / PyTorch Nightly), 
 
 1. Download this repository as a ZIP file and extract it.
 2. Double-click on `install.bat`.
-   - The script automatically downloads an isolated Python 3.11 environment.
+   - The script installs **uv** (Python manager) if needed.
+   - It creates a local `.venv` with Python 3.11.
    - It installs PyTorch Nightly (required for Blackwell / RTX 50 Series support).
+   - It syncs all project dependencies from `pyproject.toml`.
 3. Wait until the installation is complete.
 
 ## Usage

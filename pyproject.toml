@@ -1,0 +1,9 @@
+[project]
+name = "qwen3-voice-factory"
+version = "0.1.0"
+description = "Local GUI for Qwen3-TTS"
+readme = "readme.md"
+requires-python = ">=3.11,<3.13"
+dependencies = ["gradio", "soundfile", "librosa", "scipy", "qwen-tts"]
+[tool.uv.extra-build-dependencies]
+flash-attn = ["setuptools"]

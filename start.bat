@@ -2,12 +2,12 @@
 title Qwen3 Voice Factory
 echo Starting App...
 
-if not exist "python_env\python.exe" (
+if not exist ".venv\Scripts\python.exe" (
     echo ERROR: Python environment not found!
     echo Please run 'install.bat' first.
     pause
     exit
 )
 
-.\python_env\python.exe app.py
+.\.venv\Scripts\python.exe app.py
 pause
