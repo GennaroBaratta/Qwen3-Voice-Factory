@@ -6,6 +6,7 @@ from typing import Literal
 
 
 import gradio as gr
+from gradio.themes import Default
 import torch
 import soundfile as sf
 import time
@@ -268,7 +269,7 @@ spotify_html = """
 </div>
 """
 
-with gr.Blocks(title="Qwen3 Voice Factory") as demo:
+with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
     
     # --- HEADER ---
     with gr.Row(elem_classes="header-row"):
