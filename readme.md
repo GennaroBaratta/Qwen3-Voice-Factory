@@ -19,16 +19,23 @@ Specially optimized for **NVIDIA RTX 50 Series** (CUDA 12.8 / PyTorch Nightly), 
 ## Installation
 
 1. Download this repository as a ZIP file and extract it.
-2. Double-click on `install.bat`.
+2. Run:
+   ```powershell
+   python scripts/install.py
+   ```
    - The script installs **uv** (Python manager) if needed.
    - It creates a local `.venv` with Python 3.11.
    - It installs PyTorch Nightly (required for Blackwell / RTX 50 Series support).
    - It syncs all project dependencies from `pyproject.toml`.
+   - It applies a local compatibility patch (`scripts/patch_qwen_tts_v1_removal.py`) that keeps `qwen-tts` on the 12Hz tokenizer path only.
 3. Wait until the installation is complete.
 
 ## Usage
 
-1. Double-click on `start.bat`.
+1. Run:
+   ```powershell
+   python scripts/start.py
+   ```
 2. Your browser will open automatically at `http://127.0.0.1:7860`.
 
 ## Models
