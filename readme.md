@@ -1,62 +1,67 @@
 # 🏭 Qwen3 Voice Factory (RTX 50 Series Optimized)
 
-A local, portable GUI for [Qwen3-TTS](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice).
-Specially optimized for **NVIDIA RTX 50 Series** (CUDA 12.8 / PyTorch Nightly), but also runs on previous generations (3090/4090).
+## Overview
 
-> **🎯 Perfect for anyone who wants to test these models quickly without dealing with complex node graphs (ComfyUI).**
+A local, portable GUI for [Qwen3-TTS](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice), focused on fast testing without complex node graphs (ComfyUI).
+Specially optimized for **NVIDIA RTX 50 Series** (CUDA 12.8 / PyTorch Nightly), while still usable on previous generations (3090/4090).
 
 ![Screenshot](screenshot.png)
 
-## Features
-
-- **🎬 Director Mode:** Choose presets (Ryan, Vivian) and provide direction instructions ("Angry", "Whispering").
-- **🧬 Voice Cloner:** Upload a short audio file (3-10s) and clone the voice (supports High-Quality ICL Mode).
-- **🎨 Voice Creator:** Create completely new voices from scratch using text descriptions (Voice Design).
-- **📊 Live Hardware Monitor:** Includes a real-time dashboard to watch your VRAM/RAM/CPU usage while generating.
-- **📂 Auto-Save:** Automatically creates an `outputs_audio` folder and saves every generation with a timestamp.
-- **Portable:** Does not modify your Windows system. Everything stays contained in one folder.
-
-## Installation
+## Quick Start
 
 1. Download this repository as a ZIP file and extract it.
-2. Run:
+2. Install dependencies and patch support:
    ```powershell
    python scripts/install.py
    ```
-   - The script installs **uv** (Python manager) if needed.
-   - It creates a local `.venv` with Python 3.11.
-   - It installs PyTorch Nightly (required for Blackwell / RTX 50 Series support).
-   - It syncs all project dependencies from `pyproject.toml`.
-   - It applies a local compatibility patch (`scripts/patch_qwen_tts_v1_removal.py`) that keeps `qwen-tts` on the 12Hz tokenizer path only.
-3. Wait until the installation is complete.
-
-## Usage
-
-1. Run:
+3. Start the app:
    ```powershell
    python scripts/start.py
    ```
-2. Your browser will open automatically at `http://127.0.0.1:7860`.
+4. The browser opens at `http://127.0.0.1:7860`.
+
+What `scripts/install.py` does:
+- Installs **uv** (if missing).
+- Creates a local `.venv` with Python 3.11.
+- Installs PyTorch Nightly (Blackwell / RTX 50 support).
+- Syncs dependencies from `pyproject.toml`.
+- Applies the local 12Hz compatibility patch to `qwen_tts`.
+
+## Features
+
+- **🎬 Director:** Preset speakers with optional style/performance instructions.
+- **🧬 Voice Cloner:** 3-10s reference audio cloning with optional transcript-guided high-quality mode.
+- **🎨 Voice Creator:** Voice creation from text description + optional performance instruction.
+- **📊 Live Hardware Monitor:** Real-time CPU/RAM/VRAM status in the UI.
+- **📂 Auto-Save:** Every generation is saved in `outputs_audio/` with a timestamp.
+- **Portable workflow:** Everything stays inside the project folder.
+
+## Runtime Behavior
+
+- On first use of a tab, the corresponding model is downloaded from Hugging Face (~4GB each).
+- The 12Hz-only `qwen_tts` patch is applied during install and re-checked on each start (idempotent).
+- Patch details: [`docs/qwen-tts-patch.md`](docs/qwen-tts-patch.md).
 
 ## Models
-Models are automatically downloaded from HuggingFace the first time you use a specific tab (~4GB per model). Please ensure you have enough disk space.
+
+- `Director`: `Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice`
+- `Voice Cloner`: `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
+- `Voice Creator`: `Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign`
 
 ## Requirements
 
 - Windows 10/11
-- NVIDIA GPU (Recommended: 12GB+ VRAM)
-- Internet connection (required for installation and model download)
+- NVIDIA GPU (recommended: 12GB+ VRAM)
+- Internet connection (required for install and model downloads)
 
 ## 🔗 Credits & Acknowledgements
 
-This project is a GUI wrapper built to make the amazing work of the **Qwen Team** easily accessible. All AI capabilities are powered by their models.
+This project is a GUI wrapper built to make the work of the **Qwen Team** easy to use locally.
 
-- **Base Models:** Developed by [Alibaba Cloud / Qwen Team](https://huggingface.co/Qwen).
-- Please support their original work on HuggingFace and GitHub.
+- **Base models:** [Alibaba Cloud / Qwen Team](https://huggingface.co/Qwen)
+- Please support the original work on Hugging Face and GitHub.
 
 ## 🤝 Support
 
-This is a free open-source project. I don't ask for donations.
-However, if you want to say "Thanks", check out my profile on **[Spotify](https://open.spotify.com/artist/7EdK2cuIo7xTAacutHs9gv?si=4AqQE6GcQpKJFeVk6gJ06g)**.
-
-A follow or a listen is the best way to support me! 🎧
+This is a free open-source project.
+If you want to say thanks, you can support me on **[Spotify](https://open.spotify.com/artist/7EdK2cuIo7xTAacutHs9gv?si=5d3AbCKgR3GemCemctb8FA)**.

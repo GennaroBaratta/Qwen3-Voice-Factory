@@ -275,8 +275,8 @@ with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
     with gr.Row(elem_classes="header-row"):
         with gr.Column(scale=1):
             gr.Markdown("# 🏭 Qwen3 Voice Factory")
-            # --- CHANGED: More professional subtitle ---
-            gr.Markdown("RTX 50 Series Powered | 3 Engines | Portable")
+            gr.Markdown("RTX 50 Series Powered | 12Hz Workflow | 3 Engines | Portable")
+            gr.Markdown("Quick start: `python scripts/install.py` then `python scripts/start.py` | First use in each tab downloads its model (~4GB).")
         
         with gr.Column(scale=1):
             stats_display = gr.HTML(value=get_system_stats())
@@ -287,30 +287,32 @@ with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
     with gr.Tabs():
         
         # TAB 1: DIRECTOR
-        with gr.Tab("🎬 Director (Presets)"):
+        with gr.Tab("🎬 Director (Preset Speaker + Style)"):
+            gr.Markdown("Use a preset speaker and optional style/performance instructions for directed delivery.")
             with gr.Row():
                 with gr.Column():
                     t1_text = gr.Textbox(
-                        label="Text", 
+                        label="Text to speak", 
                         placeholder="Example: Hello, I am using the director mode.", 
                         lines=2
                     )
                     with gr.Row():
                         t1_speaker = gr.Dropdown(SPEAKERS, value="Ryan", label="Speaker")
                         t1_instr = gr.Textbox(
-                            label="Style/Instruction", 
+                            label="Style Instruction (Optional)", 
                             placeholder="Optional: e.g. Angry, Whispering, Happy", 
                             lines=1
                         )
                     t1_btn = gr.Button("🔊 GENERATE", elem_classes="gen-btn")
-                    t1_stat = gr.Textbox(label="Status")
+                    t1_stat = gr.Textbox(label="Status / Error")
                 with gr.Column():
                     t1_out = gr.Audio(label="Output")
                     gr.Markdown(spotify_html)
             t1_btn.click(run_director, [t1_text, t1_speaker, t1_instr], [t1_out, t1_stat])
 
         # TAB 2: CLONER
-        with gr.Tab("🧬 Voice Cloner"):
+        with gr.Tab("🧬 Voice Cloner (Transcript-Aware)"):
+            gr.Markdown("Use 3-10s reference audio. Add an exact transcript for highest quality (ICL), or leave it empty for faster X-Vector mode.")
             with gr.Row():
                 with gr.Column():
                     t2_text = gr.Textbox(
@@ -325,23 +327,23 @@ with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
                         type="filepath", 
                         sources=["microphone", "upload"]
                     )
-                    # Hint for User
-                    gr.Markdown("*Note: To save your recording, use the download button in the audio player after recording.*")
+                    gr.Markdown("*Tip: Provide the exact transcript for best quality. Generated outputs are auto-saved to `outputs_audio/`.*")
                     
                     t2_ref_text = gr.Textbox(
-                        label="Transcript of Audio", 
+                        label="Transcript of Audio (Optional)", 
                         placeholder="Optional: Write exactly what is said in the audio for higher quality.", 
                         lines=1
                     )
                     t2_btn = gr.Button("🧬 CLONE VOICE", elem_classes="gen-btn")
-                    t2_stat = gr.Textbox(label="Status")
+                    t2_stat = gr.Textbox(label="Status / Error")
                 with gr.Column():
                     t2_out = gr.Audio(label="Output")
                     gr.Markdown(spotify_html)
             t2_btn.click(run_cloner, [t2_text, t2_ref, t2_ref_text], [t2_out, t2_stat])
 
         # TAB 3: CREATOR
-        with gr.Tab("🎨 Voice Creator"):
+        with gr.Tab("🎨 Voice Creator (Description + Style)"):
+            gr.Markdown("Describe who the voice is, then optionally guide how it should perform.")
             with gr.Row():
                 with gr.Column():
                     t3_text = gr.Textbox(
@@ -360,7 +362,7 @@ with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
                         lines=1
                     )
                     t3_btn = gr.Button("🎨 CREATE VOICE", elem_classes="gen-btn")
-                    t3_stat = gr.Textbox(label="Status")
+                    t3_stat = gr.Textbox(label="Status / Error")
                 with gr.Column():
                     t3_out = gr.Audio(label="Output")
                     gr.Markdown(spotify_html)
