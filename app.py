@@ -35,6 +35,10 @@ loaded_models: dict[ModelMode, Qwen3TTSModel | None] = {
     "designer": None
 }
 
+RUNTIME_DEVICE = os.environ.get("QWEN_DEVICE", "auto").strip().lower()
+if RUNTIME_DEVICE not in {"auto", "cuda", "cpu"}:
+    RUNTIME_DEVICE = "auto"
+
 # --- SYSTEM MONITOR ---
 def get_system_stats():
     """System Monitor (CPU/RAM/VRAM) with HTML Styling."""
@@ -77,17 +81,35 @@ def load_specific_model(mode: ModelMode) -> Qwen3TTSModel:
     
     model_id = MODELS_CONFIG[mode]
     print(f"⏳ Loading model for '{mode}': {model_id} ...")
-    
-    if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is required but was not detected.")
-    # Loading with bfloat16 and SDPA for RTX 50 series
-    model = Qwen3TTSModel.from_pretrained(
-        model_id,
-        device_map="cuda",
-        dtype=torch.bfloat16,
-        attn_implementation="sdpa"
-    )
-    print(f"✅ {mode.upper()} model loaded successfully (SDPA Mode)!")
+
+    if RUNTIME_DEVICE == "cuda":
+        runtime_device = "cuda"
+    elif RUNTIME_DEVICE == "cpu":
+        runtime_device = "cpu"
+    else:
+        runtime_device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    if runtime_device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA runtime requested but was not detected.")
+
+    if runtime_device == "cuda":
+        # GPU profile tuned for RTX 50 series.
+        model = Qwen3TTSModel.from_pretrained(
+            model_id,
+            device_map="cuda",
+            dtype=torch.bfloat16,
+            attn_implementation="sdpa"
+        )
+        mode_label = "CUDA/SDPA"
+    else:
+        model = Qwen3TTSModel.from_pretrained(
+            model_id,
+            device_map="cpu",
+            dtype=torch.float32
+        )
+        mode_label = "CPU"
+
+    print(f"✅ {mode.upper()} model loaded successfully ({mode_label} Mode)!")
     loaded_models[mode] = model
     return model
 
@@ -262,14 +284,8 @@ custom_css = """
 """
 SPEAKERS = ["Ryan", "Aiden", "Vivian", "Serena", "Uncle_Fu", "Dylan", "Eric", "Ono_Anna", "Sohee"]
 
-spotify_html = """
-<div style="text-align: center; margin-top: 10px;">
-    If you find this tool helpful, support me on 
-    <a href="https://open.spotify.com/artist/7EdK2cuIo7xTAacutHs9gv?si=5d3AbCKgR3GemCemctb8FA" target="_blank" style="color: #1DB954; font-weight: bold; text-decoration: none;">Spotify</a>.
-</div>
-"""
 
-with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
+with gr.Blocks(title="Qwen3 Voice Factory") as demo:
     
     # --- HEADER ---
     with gr.Row(elem_classes="header-row"):
@@ -307,7 +323,6 @@ with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
                     t1_stat = gr.Textbox(label="Status / Error")
                 with gr.Column():
                     t1_out = gr.Audio(label="Output")
-                    gr.Markdown(spotify_html)
             t1_btn.click(run_director, [t1_text, t1_speaker, t1_instr], [t1_out, t1_stat])
 
         # TAB 2: CLONER
@@ -338,7 +353,6 @@ with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
                     t2_stat = gr.Textbox(label="Status / Error")
                 with gr.Column():
                     t2_out = gr.Audio(label="Output")
-                    gr.Markdown(spotify_html)
             t2_btn.click(run_cloner, [t2_text, t2_ref, t2_ref_text], [t2_out, t2_stat])
 
         # TAB 3: CREATOR
@@ -365,7 +379,6 @@ with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
                     t3_stat = gr.Textbox(label="Status / Error")
                 with gr.Column():
                     t3_out = gr.Audio(label="Output")
-                    gr.Markdown(spotify_html)
             t3_btn.click(run_designer, [t3_text, t3_desc, t3_instr], [t3_out, t3_stat])
 
 if __name__ == "__main__":
