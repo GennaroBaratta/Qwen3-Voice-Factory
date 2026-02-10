@@ -2,6 +2,7 @@ import os
 import sys
 import warnings
 import logging
+from typing import Literal
 
 # --- SILENCER BLOCK ---
 # 1. Suppress Python Warnings
@@ -17,6 +18,7 @@ logging.getLogger("httpx").setLevel(logging.ERROR)
 # ----------------------------------------------
 
 import gradio as gr
+from gradio.themes import Default
 import torch
 import soundfile as sf
 import time
@@ -29,15 +31,17 @@ from qwen_tts import Qwen3TTSModel
 OUTPUT_DIR = "outputs_audio"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+ModelMode = Literal["director", "cloner", "designer"]
+
 # Model Definitions
-MODELS_CONFIG = {
+MODELS_CONFIG: dict[ModelMode, str] = {
     "director": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
     "cloner":   "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
     "designer": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
 }
 
 # Global Model Cache
-loaded_models = {
+loaded_models: dict[ModelMode, Qwen3TTSModel | None] = {
     "director": None,
     "cloner": None,
     "designer": None
@@ -50,26 +54,25 @@ def get_system_stats():
         cpu = psutil.cpu_percent(interval=None)
         ram = psutil.virtual_memory().percent
         
-        vram_display = "N/A"
+        vram_display = "<span class='vf-vram-na'>N/A</span>"
         if torch.cuda.is_available():
             free, total = torch.cuda.mem_get_info()
             used = total - free
             used_gb = used / (1024**3)
             total_gb = total / (1024**3)
             percent = (used / total) * 100
-            # Change color if VRAM usage is high (>90%)
-            color = "#ff4444" if percent > 90 else "#00ff88"
-            vram_display = f"<span style='color:{color}'>{used_gb:.1f}GB</span> / {total_gb:.1f}GB ({percent:.0f}%)"
+            vram_class = "vf-vram-warn" if percent > 90 else "vf-vram-ok"
+            vram_display = f"<span class='{vram_class}'>{used_gb:.1f}GB</span> / {total_gb:.1f}GB ({percent:.0f}%)"
         
         return f"""
-        <div style="display: flex; gap: 20px; font-family: 'Consolas', monospace; font-size: 14px; color: #ccc; align-items: center; justify-content: flex-end; height: 100%;">
-            <div style="background: #1a1f2e; padding: 5px 10px; border-radius: 6px; border: 1px solid #333;">
+        <div class="vf-monitor">
+            <div class="vf-monitor-card">
                 🖥️ CPU: {cpu}%
             </div>
-            <div style="background: #1a1f2e; padding: 5px 10px; border-radius: 6px; border: 1px solid #333;">
+            <div class="vf-monitor-card">
                 🧠 RAM: {ram}%
             </div>
-            <div style="background: #1a1f2e; padding: 5px 10px; border-radius: 6px; border: 1px solid #333;">
+            <div class="vf-monitor-card">
                 🎮 VRAM: {vram_display}
             </div>
         </div>
@@ -78,9 +81,11 @@ def get_system_stats():
         return "Loading Stats..."
 
 # --- SMART MODEL LOADER ---
-def load_specific_model(mode):
+def load_specific_model(mode: ModelMode) -> Qwen3TTSModel:
     global loaded_models
-    if loaded_models[mode] is not None: return loaded_models[mode]
+    cached_model = loaded_models[mode]
+    if cached_model is not None:
+        return cached_model
     
     model_id = MODELS_CONFIG[mode]
     print(f"⏳ Loading model for '{mode}': {model_id} ...")
@@ -131,6 +136,7 @@ def run_cloner(text, ref_audio, ref_text):
     # 1. Load Audio
     try:
         ref_wav, ref_sr = librosa.load(ref_audio, sr=16000, mono=True)
+        ref_sr = int(ref_sr)
     except Exception as e:
         return None, f"⚠️ Error loading audio file: {e}"
 
@@ -146,9 +152,10 @@ def run_cloner(text, ref_audio, ref_text):
             use_x_vector = True
             actual_ref_text = None
 
+        ref_audio_input: tuple[np.ndarray, int] = (ref_wav, ref_sr)
         wavs, sr = model.generate_voice_clone(
             text=text,
-            ref_audio=(ref_wav, ref_sr),
+            ref_audio=ref_audio_input,
             ref_text=actual_ref_text,
             x_vector_only_mode=use_x_vector,
             language="Auto"
@@ -205,10 +212,65 @@ def handle_error(e):
 
 # --- GUI SETUP ---
 custom_css = """
-body { background-color: #0b0f19; color: #fff; } 
-gradio-app { background: #0b0f19 !important; }
-.gen-btn { background: linear-gradient(90deg, #ff9966, #ff5e62); color: white; border: none; font-weight: bold; }
-.header-row { align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.gen-btn {
+    background: linear-gradient(90deg, #ff9966, #ff5e62);
+    color: #fff;
+    border: 1px solid transparent;
+    font-weight: 700;
+}
+
+.gen-btn:hover {
+    filter: brightness(1.04);
+}
+
+.header-row {
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color-primary, #d1d5db);
+    padding-bottom: 10px;
+}
+
+.vf-monitor {
+    display: flex;
+    gap: 12px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 14px;
+    color: var(--body-text-color, #1f2937);
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    flex-wrap: wrap;
+}
+
+.vf-monitor-card {
+    background: var(--block-background-fill, #ffffff);
+    border: 1px solid var(--border-color-primary, #d1d5db);
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: var(--body-text-color, #1f2937);
+}
+
+.vf-vram-ok {
+    color: #0a8f45;
+    font-weight: 600;
+}
+
+.dark .vf-vram-ok {
+    color: #34d399;
+}
+
+.vf-vram-warn {
+    color: #c62828;
+    font-weight: 700;
+}
+
+.dark .vf-vram-warn {
+    color: #f87171;
+}
+
+.vf-vram-na {
+    color: var(--body-text-color-subdued, #6b7280);
+}
 """
 SPEAKERS = ["Ryan", "Aiden", "Vivian", "Serena", "Uncle_Fu", "Dylan", "Eric", "Ono_Anna", "Sohee"]
 
@@ -219,7 +281,7 @@ spotify_html = """
 </div>
 """
 
-with gr.Blocks(title="Qwen3 Voice Factory") as demo:
+with gr.Blocks(title="Qwen3 Voice Factory", theme=Default()) as demo:
     
     # --- HEADER ---
     with gr.Row(elem_classes="header-row"):
